@@ -1,31 +1,66 @@
 use nannou::prelude::*;
 
+const BG_COLOR: (u8, u8, u8, u8) = (0x28, 0x28, 0x28, 1);
+const WINDOW_WIDTH: u32 = 600;
+const WINDOW_HEIGHT: u32 = 400;
+const WALKER_SATURATION: f32 = 50.0;
+const WALKER_BRIGHTNESS: f32 = 80.0;
+const WALKER_ALPHA: f32 = 1.0;
+const STROKE_WEIGHT: f32 = 2.0;
+const STEP_MIN: f32 = -5.0;
+const STEP_MAX: f32 = 5.0;
+
 struct Walker {
-    x: f32,
-    y: f32,
+    position: Point2,
+    prev_position: Point2,
     color: Hsva,
 }
 
-fn model(_app: &App) -> Walker {
-    Walker {
-        x: 0.0,
-        y: 0.0,
-        color: Hsva::new(0.0, 0.0, 0.0, 1.0),
+impl Walker {
+    fn new() -> Self {
+        let initial_hue = map_range(
+            0.0f32,
+            -(WINDOW_HEIGHT as f32) / 2.0,
+            (WINDOW_HEIGHT as f32) / 2.0,
+            0.0,
+            360.0,
+        );
+
+        Walker {
+            position: Point2::ZERO,
+            prev_position: Point2::ZERO,
+            color: Hsva::new(
+                initial_hue,
+                WALKER_SATURATION,
+                WALKER_BRIGHTNESS,
+                WALKER_ALPHA,
+            ),
+        }
     }
+
+    fn walk(&mut self) {
+        let new_pos = Point2::new(
+            random_range(STEP_MIN, STEP_MAX),
+            random_range(STEP_MIN, STEP_MAX),
+        );
+
+        self.prev_position = self.position;
+        self.position = new_pos;
+    }
+}
+
+fn model(_app: &App) -> Walker {
+    Walker::new()
 }
 
 fn setup(draw: &Draw, frame: &Frame) {
     if frame.nth() == 0 {
-        draw.background().color(WHITE);
+        draw.background().color(Rgba8::from_components(BG_COLOR));
     }
 }
 
 fn update(_app: &App, model: &mut Walker, _update: Update) {
-    let new_x = random_range::<f32>(-1.0, 1.0);
-    let new_y = random_range::<f32>(-1.0, 1.0);
-
-    model.x += new_x;
-    model.y += new_y;
+    model.walk()
 }
 
 fn view(app: &App, model: &Walker, frame: Frame) {
@@ -33,14 +68,18 @@ fn view(app: &App, model: &Walker, frame: Frame) {
 
     setup(&draw, &frame);
 
-    draw.rect()
-        .xy(pt2(model.x, model.y))
-        .wh(vec2(2.0, 2.0))
+    draw.line()
+        .points(model.prev_position, model.position)
+        .weight(STROKE_WEIGHT)
         .color(model.color);
 
     draw.to_frame(app, &frame).unwrap();
 }
 
 fn main() {
-    nannou::app(model).simple_window(view).update(update).run();
+    nannou::app(model)
+        .simple_window(view)
+        .size(WINDOW_WIDTH, WINDOW_HEIGHT)
+        .update(update)
+        .run();
 }
