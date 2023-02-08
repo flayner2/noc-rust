@@ -10,4 +10,4 @@ nannou = "~0.18"
 
 [[example]]
 name = "random-walker"
-path = "random-walker/random-walker.rs"
+path = "random-walker/main.rs"
